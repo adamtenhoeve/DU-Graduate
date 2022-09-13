@@ -1,0 +1,208 @@
+---
+title: "Problem Set 4, Winter 2021"
+author: "Adam Ten Hoeve"
+output: pdf_document
+---
+
+```{r setup, include=TRUE}
+
+# Load any packages, if any, that you use as part of your answers here
+# For example: 
+library(ggplot2)
+library(tidyverse)
+library(ggpubr)
+library(leaps) 
+
+```
+
+CONTEXT - DOUGHNUTS DATA
+
+As a reminder, I decided to conduct a factorial experiment inspired by the experiment conducted by Lowe (1935) to learn more about how much fat doughnuts absorb in different conditions. Like Lowe, I used four types of fats (fat_type). I also used three types of flour (flour_type): all-purpose flour, whole wheat flour, and gluten-free flour. Again like Lowe, I cooked six identical batches of doughnuts in each flour and fat combination. Each batch contained 24 doughnuts, and the total fat (in grams) absorbed by the doughnuts in each batch was recorded (sim_tot_fat).
+
+## Question 1 - Nested model testing (15 points)
+
+As previously noted, ANOVA is a special case of regression, so anything that can be done in the ANOVA framework can be done in some way in the regression framework. When conducting a two-way factorial ANOVA, you can test for main effects and the interaction between the two variables. When you coded this as a regression in the previous problem set, you ended up with a model with many coefficients associated with the interaction. You can, however, do an ANOVA-style all-at-once test of the interaction using nested model testing.
+
+First, load the data into memory and make the appropriate changes to the variables. 
+
+```{r}
+
+# Code for loading and setting up your data appropriately. 
+doughnuts = read.csv("doughnutsfactorial.csv")
+doughnuts$fat_type = as.factor(doughnuts$fat_type)
+doughnuts$flour_type = as.factor(doughnuts$flour_type)
+
+# Don't forget to display using the str() function!
+str(doughnuts)
+
+```
+
+Next, specify your two regression models. The first model will have just the vectors associated with main effects, and the second model will have both the main effects and interaction vectors. Please display the results of both using the summary() function.
+
+```{r}
+
+# Code for your regression models
+doughnuts.lmod.1 = lm(sim_tot_fat~fat_type+flour_type, data=doughnuts)
+summary(doughnuts.lmod.1)
+
+# Use the summary() function to display your results!
+doughnuts.lmod.2 = lm(sim_tot_fat ~ fat_type*flour_type, data=doughnuts)
+summary(doughnuts.lmod.2)
+
+```
+
+Finally, conduct the F-change test to determine if the interaction is significant and state what conclusion you reach (hint: make sure your degrees of freedom are positive):
+
+```{r}
+
+# Code for F-change test
+anova(doughnuts.lmod.1, doughnuts.lmod.2)
+
+```
+
+Write your conclusion about the significance of the interaction here: 
+
+From the nested-model test, we get a p-value of $0.671$. This is a large value, so we fail to reject the null hypothesis of the test. Therefor, there is not a significant difference between the models. This means that the interaction term is not significant because is didn't significantly improve the fit of the model.
+
+------
+
+
+CONTEXT - FISHERMAN DATA (adapted from Cathy Durso's material)
+
+Data Source: N.B. Al-Majed and M.R. Preston (2000). "Factors Influencing the Total
+Mercury and Methyl Mercury in the Hair of Fishermen in Kuwait," 
+Environmental Pollution, Vol. 109, pp. 239-250.
+
+   http://users.stat.ufl.edu/~winner/datasets.html, downloaded on 4/23/2019
+
+Description: Factors related to mercury levels among fishermen and a control
+group of non-fishermen.
+
+Variables (names of variables in the data set)
+
+Fisherman indicator  (fisherman)
+
+Age in years  (age)
+
+Residence Time in years   (restime)
+
+Height in cm    (height)
+
+Weight in kg    (weight)
+
+Fish meals per week    (fishmlwk)
+
+Parts of fish consumed: 0=none, 1=muscle tissue only, 2=mt and sometimes
+              whole fish, 3=whole fish  (fishpart)
+              
+Methyl Mercury in mg/g    (MeHg)
+
+Total Mercury in mg/g     (TotHg)
+
+
+## Question 2 - Forward selection (10 points)
+
+Use forward selection to find the best set of predictors to predict the log of total mercury. Be sure to include fisherman, age, restime, height, weight, fishmlwk, and fishpart in your pool of potential predictors. Note that fishpart and fisherman should be categorical variables. Do not include MeHg in your set of predictors. 
+
+First, load the data into memory and change the variable types as appropriate. Please show the structure of your data in your knitted document by using the str() function.
+
+```{r}
+
+# Code for loading and setting up your data appropriately. These changes will apply to the next two questions as well, so you do not need to do this for the next two questions. 
+fishermen = read.csv("fishermen_mercury.csv")
+fishermen$fisherman = as.factor(fishermen$fisherman)
+fishermen$fishpart = as.factor(fishermen$fishpart)
+
+# Don't forget to display using the str() function!
+str(fishermen)
+```
+
+Next, conduct your forward selection. Be sure to include trace=ON in your function.
+
+```{r}
+
+# Code for conduting a forward selection
+# Specify the maximum scope model
+full.model.formula = as.formula("log(TotHg)~fisherman+age+restime+height+weight+fishmlwk+fishpart")
+
+# Perform formward selection with the step() function
+fisherman.lmod.forward = step(lm(log(TotHg)~1, data=fishermen), 
+                              scope=full.model.formula, direction="forward", trace=1)
+```
+
+Finally, display the final model using the summary() function.
+
+```{r}
+
+# Display the model selected by forward selection using the summary() function!
+summary(fisherman.lmod.forward)
+
+```
+
+## Question 3 - Backward selection (10 points)
+
+Use backward selection to find the best set of predictors to predict the log of total mercury. Be sure to include fisherman, age, restime, height, weight, fishmlwk, and fishpart in your pool of potential predictors. Note that fishpart and fisherman should be categorical variables. Do not include MeHg in your set of predictors. 
+
+
+First, conduct your backward selection. Be sure to include trace=ON in your function.
+
+```{r}
+
+# Code for conduting a backward selection
+# Specify the minimum model formula
+model.min.formula = as.formula("log(TotHg)~1")
+# Perform backward selection using step()
+fishermen.lmod.backward = step(lm(full.model.formula, data=fishermen), 
+                               scope=model.min.formula, direction="backward", trace=1)
+
+
+```
+
+Next, display the final model using the summary() function.
+
+```{r}
+
+# Display the model selected by backward selection using the summary() function!
+summary(fishermen.lmod.backward)
+
+```
+
+## Question 4 - Best subsets selection (10 points)
+
+Use best subsets selection to find the best set of predictors to predict the log of total mercury. Be sure to include fisherman, age, restime, height, weight, fishmlwk, and fishpart in your pool of potential predictors. Note that fishpart and fisherman should be categorical variables. Do not include MeHg in your set of predictors. 
+
+First, conduct your best subsets selection.
+
+```{r}
+# Code for conduting a best subsets selection
+# Find the best subsets of for each number of predictors
+x = model.matrix(full.model.formula, fishermen)
+best.subsets = regsubsets(x=x[, 2:ncol(x)], y=log(fishermen$TotHg), 
+                          method="exhaustive", nvmax=8, nbest=1)
+subsets = summary(best.subsets)$which
+# Calculate the BIC value for each of those subsets. Plot the results.
+BICs = summary(best.subsets)$bic
+qplot(1:length(BICs), BICs)
+```
+
+```{r}
+# From the graph, we see that the lowest BIC occurs when there are 4 predictors
+subsets
+# We see that the predictors for the best subsets model are weight and fishpart.
+fishermen.best.subset = lm(log(TotHg)~weight+fishpart, data=fishermen)
+```
+
+Next, display the final model using the summary() function.
+
+```{r}
+
+# use the summary() function!
+summary(fishermen.best.subset)
+
+```
+
+## Question 5 - 5 points
+
+Were there any differences between the models chosen by the three different automated model selection methods? If so, how did they differ?
+
+Your answer here: All three of the model selection techniques resulted in the same selection of predictors, being only `weight` and `fishpart`.

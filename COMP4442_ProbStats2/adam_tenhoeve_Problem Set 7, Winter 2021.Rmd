@@ -1,0 +1,200 @@
+---
+title: "Problem Set 7, Fall 2020"
+author: "Adam Ten Hoeve"
+date: "02/26/2021"
+output: pdf_document
+---
+
+```{r setup, include=TRUE}
+
+# Load any packages, if any, that you use as part of your answers here
+# For example: 
+library(tidyverse)
+library(mlbench)
+library(glmnet)  # For ridge regression
+
+```
+
+CONTEXT - HOUSE VALUES IN BOSTON, CIRCA 1970
+
+This dataset was obtained through the mlbench package, which contains a subset of data sets available through the UCI Machine Learning Repository. From the help file:
+
+Housing data for 506 census tracts of Boston from the 1970 census. The dataframe BostonHousing contains the original data by Harrison and Rubinfeld (1979).
+
+The original data are 506 observations on 14 variables, medv being the target variable:
+
+Continous variables:
+
+crim	    per capita crime rate by town 
+zn      	proportion of residential land zoned for lots over 25,000 sq.ft  
+indus   	proportion of non-retail business acres per town
+nox	      nitric oxides concentration (parts per 10 million)
+rm	      average number of rooms per dwelling
+age	      proportion of owner-occupied units built prior to 1940
+dis	      weighted distances to five Boston employment centres
+rad	      index of accessibility to radial highways
+tax	      full-value property-tax rate per USD 10,000
+ptratio	  pupil-teacher ratio by town
+b	        1000(B - 0.63)^2 where B is the proportion of blacks by town
+lstat	    percentage of lower status of the population
+medv	    median value of owner-occupied homes in USD 1000's
+
+Categorical variables: 
+
+chas	    Charles River dummy variable (= 1 if tract bounds river; 0 otherwise)
+
+
+## Question 1 - 10 points
+
+The BostonHousing data is contained inside of an R package, so you'll load the data into memory a little differently than usual. Run the following code chunk, confirm that the data in loaded into memory, and ensure that your variables are of the proper type. 
+
+```{r}
+
+data(BostonHousing) # loads the BostonHousing dataset into memory from the mlbench package
+
+# Any processing code for changing variable types
+
+str(BostonHousing)
+```
+
+
+Next, conduct a ridge regression with cross-validation. Use medv as the outcome and all of the other variables in the data set as the predictors. Be sure to display your lambda.min, lambda.1se, and the set of coefficients associated with both of these lambdas.
+
+```{r}
+
+# Your code here
+set.seed(123456)
+X = data.matrix(dplyr::select(BostonHousing, -medv))
+Y = BostonHousing$medv
+ridge.model = cv.glmnet(x=X, y=Y, alpha=0)
+
+# Don't forget to display lambda.min, lambda.1se, and the coefficients for both of these!
+ridge.model$lambda.min
+coef(ridge.model, s = "lambda.min")
+
+ridge.model$lambda.1se
+coef(ridge.model, s = "lambda.1se")
+```
+
+## Question 2 - 10 points
+
+Next, conduct a lasso regression with cross-validation. As before, use medv as the outcome and all of the other variables in the data set as the predictors. Be sure to display your lambda.min, lambda.1se, and the set of coefficients associated with both of these lambdas.
+
+```{r}
+
+# Your code here
+lasso.model = cv.glmnet(x=X, y=Y, alpha=1)
+
+# Don't forget to display lambda.min, lambda.1se, and the coefficients for both of these!
+lasso.model$lambda.min
+coef(lasso.model, s="lambda.min")
+
+lasso.model$lambda.1se
+coef(lasso.model, s="lambda.1se")
+```
+
+
+## Question 3 - 5 points
+
+Did the lasso regression set any coefficients to zero? If so, note which ones were set to zero below. If not, note that these models have the same number of coefficients.
+
+Ridge vs Lasso, lambda.min: The lasso model set two coefficients to 0, for the predictors `indus` and `age`.
+
+Ridge vs Lasso, lambda.1se: The lasso model set five coefficients to 0, for the predictors `zn`, `indus`, `age`, `rad`, and `tax`.
+
+
+
+
+
+
+CONTEXT - NATIONAL INDONESIA CONTRACEPTIVE PRELAVENCE SURVEY (1987)
+
+This dataset was obtained from the UCI Machine Learning Repository. From the description on https://archive.ics.uci.edu/ml/datasets/Contraceptive+Method+Choice:
+
+This dataset is a subset of the 1987 National Indonesia Contraceptive Prevalence Survey. The samples are married women who were either not pregnant or do not know if they were at the time of interview. The problem is to predict the current contraceptive method choice (no use, long-term methods, or short-term methods) of a woman based on her demographic and socio-economic characteristics.
+
+Continuous variables
+
+Wife's age (w.age) 
+Number of children ever born (children) 
+
+Categorical variables:
+
+Wife's education (w.edu) 1=low, 2, 3, 4=high 
+Husband's education (h.edu) 1=low, 2, 3, 4=high 
+Wife's religion (w.relig) 0=Non-Islam, 1=Islam 
+Wife's now working? (w.work) 0=Yes, 1=No 
+Husband's occupation (h.occ) 1, 2, 3, 4 
+Standard-of-living index (sol.index) 1=low, 2, 3, 4=high 
+Media exposure (media) 0=Good, 1=Not good 
+Contraceptive method used (contra) 1=No-use, 2=Long-term, 3=Short-term
+
+## Question 4
+
+First, load the data set into memory and change variables into their proper type. Please re-code the contra variable such that non-use of contraception (i.e., contra=1) is equal to zero and use of contraception (i.e., contra=2 or 3) is equal to one. 
+
+```{r}
+
+contra <- read.csv("contra.csv", header=TRUE, sep=",")
+
+# Any processing code for changing variable types
+
+contra$w.edu = as.factor(contra$w.edu)
+contra$h.edu = as.factor(contra$h.edu)
+contra$w.relig = as.factor(contra$w.relig)
+contra$w.work = as.factor(contra$w.work)
+contra$h.occ = as.factor(contra$h.occ)
+contra$sol.index = as.factor(contra$sol.index)
+contra$media = as.factor(contra$media)
+contra$contra = as.factor(contra$contra)
+
+str(contra)
+```
+
+Next, conduct a ridge regression with cross-validation. Use contra as the outcome and all of the other variables in the data set as the predictors. Be sure to display your lambda.min, lambda.1se, and the set of coefficients associated with both of these lambdas.
+
+```{r}
+
+# Your code here
+X.contra = model.matrix(contra~., data=contra)
+X.contra = X.contra[,-1]
+Y.contra = contra$contra
+
+contra.ridge = cv.glmnet(x=X.contra, y=Y.contra, alpha=0, family="multinomial")
+
+# Don't forget to display lambda.min, lambda.1se, and the coefficients for both of these!
+
+contra.ridge$lambda.min
+coef(contra.ridge, s="lambda.min")
+
+contra.ridge$lambda.1se
+coef(contra.ridge, s="lambda.1se")
+
+```
+
+
+
+## Question 5
+
+Next, conduct a lasso logistic regression with cross-validation. As before, use contra as the outcome and all of the other variables in the data set as the predictors. Be sure to display your lambda.min, lambda.1se, and the set of coefficients associated with both of these lambdas.
+
+```{r}
+
+# Your code here
+contra.lasso = cv.glmnet(x=X.contra, y=Y.contra, alpha=1, family="multinomial")
+
+# Don't forget to display lambda.min, lambda.1se, and the coefficients for both of these!
+contra.lasso$lambda.min
+coef(contra.lasso, s="lambda.min")
+
+contra.lasso$lambda.1se
+coef(contra.lasso, s="lambda.1se")
+```
+
+## Question 6 - 5 points
+
+Did the lasso regression set any coefficients to zero? If so, note which ones were set to zero below. If not, note that these models have the same number of coefficients.
+
+Ridge vs Lasso, lambda.min: 9 coefficients where set to zero with lambda.min. Those coefficients were for the predictors: `w.age`, `h.edu3`, `children`, `w.work1`, `h.occ3`, `h.occ4`, `sol.index2`, `sol.index3`, `media1`.
+
+Ridge vs Lasso, lambda.1se: 14 coefficients where set to zero with lambda.1se. Those coefficients were for the predictors: `w.edu2`, `w.edu3`, `w.edu4`, `h.edu2`, `h.edu4`, `children`, `w.relig1`, `w.work1`, `h.occ2`, `h.occ4`, `sol.index2`, `sol.index3`, `sol.index4`, `media1`.
