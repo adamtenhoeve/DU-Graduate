@@ -1,0 +1,242 @@
+---
+title: "Problem Set 8"
+author: "Adam Ten Hoeve"
+date: '`r format(Sys.time(), "%d %B, %Y")`'
+header-includes:
+  - \usepackage{amsmath}
+output:
+  word_document: default
+  html_document:
+    df_print: paged
+  pdf_document: default
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+These questions were rendered in R markdown through RStudio (<https://urldefense.com/v3/__https://www.rstudio.com/wp-content/uploads/2015/02/rmarkdown-cheatsheet.pdf__;!!NCZxaNi9jForCP_SxBKJCA!H2o4AVX3C2X-TmYBjS04rM_qVhCWeHQ0mcn9vyoT7AvlzUgSuJFJ379LaZsNInZefg$ >, <https://urldefense.com/v3/__http://rmarkdown.rstudio.com__;!!NCZxaNi9jForCP_SxBKJCA!H2o4AVX3C2X-TmYBjS04rM_qVhCWeHQ0mcn9vyoT7AvlzUgSuJFJ379LaZtOrdH-oA$ > ).
+
+Please complete the following tasks, in R where applicable. Please generate a solution document in R markdown and upload the rendered .doc, .docx, or .pdf document.  You may add hand computations to a .doc or .docx if you prefer. In the rendered document, please show your code. That is, don't use "echo=FALSE".  
+
+In either case, your work should be based on the data's being in the same folder as the R files. Please turn in your work on Canvas. Your solution document should have your answers to the questions and should display the requested plots.
+
+## 1. (5 points) 
+
+Let $X$ and $Y$ be independent random variables with $\chi^2$ distributions with $n$ and $m$ degrees of freedom respectively. What is the distribution of $X+Y$?. (5 points)
+
+We know that for $X$ and $Y$ to be $\chi^2$ random variables, they would result from the sum of $n$ and $m$, respectively, iid standard normal distributions. In other words, if $Z_{i,j} \sim N(0,1)$ for $i\in \{1, 2\}$ then $X = Z_{1, 1} + \dots + Z_{1,n}$ and $Y = Z_{2,1} + \dots + Z_{2,m}$.
+
+Now we can see that our sum $X+Y$ is actually the sum of many iid standard normal distributions, i.e. $X + Y = Z_{1,1} + \dots + Z_{1,n} + Z_{2,1} + \dots + Z_{2,m}$, which would be distributed by another $\chi^2$ distribution with $n+m$ degrees of freedom.
+ 
+## 2.
+
+Correlation may be reported as a measure of the linear association between two variables. An understanding of typical correlations between independent variables aids in understanding these reports.
+
+Consider two iid samples $X$ and $Y$, each of size $n$, from a standard Normal distribution. The following question investigates the range of correlations that are typical for such samples.
+
+### 2a.(10 points)
+
+Perform a numerical experiment to estimate the  $(0.025,0.25,.0.5, 0.75,975)$ quantiles of the sample correlations between two iid samples of sizes 10, 20, 50, and 100 from the standard Normal distribution. Display the quantiles in a table. Suggestion: for each size, simulate the process of drawing a pair of samples calculating their correlation many times then report the requested quantiles of the observed correlations.(5 points)
+
+```{r}
+set.seed(0)
+
+sample_correlation = function(sample_size){
+    # Generate random samples from the standard normal
+    sample1 = rnorm(sample_size)
+    sample2 = rnorm(sample_size)
+    # Return the correlation between the samples
+    return(cor(sample1, sample2))
+}
+
+n = 5000
+sample_sizes = c(10, 20, 50, 100)
+quantiles = c(0.025, 0.25, 0.5, 0.75, 0.975)
+df = data.frame(matrix(0, nrow=length(sample_sizes), ncol=length(quantiles)))
+
+index = 1
+# For each sample size, simulate the correlation
+for (sample_size in sample_sizes){
+    # Generate n correlations from std.norms of the sample_size
+    cors = replicate(n, sample_correlation(sample_size))
+    
+    # Calculate the quantiles for the correlations
+    sample_quantiles = quantile(cors, probs=quantiles)
+    # Add the quantiles to the dataframe
+    df[index, ] = sample_quantiles
+    index = index + 1
+}
+
+names(df) = quantiles
+row.names(df) = sample_sizes
+df
+```
+
+### 2b.(10 points)
+
+Display the quantiles for each $n$ in a plot that has the value of $n$ on the x-axis, and the correlation quantiles on the y-axis. Please use bars to indicate the range between the 0.25 and 0.75 quantile and the range between the 0.025 and 0.975 quantile. Please plot a point at the 0.5 qunatile for each $n$. Please title the plot and label the axes with informative text. You may find "geom_errorbar" useful. You can position ticks on the x-axis using "scale_x_continuous(breaks=c(10,20,50,100))" for example.
+
+```{r}
+g = ggplot(df, aes(x=c(1, 2, 3, 4)))
+
+g + 
+    # Add errorsbars for [0.025, 0.975] range
+    geom_errorbar(aes(ymin=df$"0.025", ymax=df$"0.975", colour="blue"), width=0.2) +
+    # Add errorbars for [0.25, 0.75] range
+    geom_errorbar(aes(ymin=df$"0.25", ymax=df$"0.75", colour="red"), width=0.2) + 
+    # Add points for the 0.5 quantile
+    geom_point(aes(x=c(1, 2, 3, 4), y=df$"0.5")) +
+    # Change the xaxis label and ticks
+    scale_x_discrete(limits=c("10", "20", "50", "100")) +
+    # Change the title and axis labels
+    labs(title="Quantiles of Correlations among Std. Normal Samples of Different Sample Sizes", 
+         x="Sample Size", y="Correlation Quantile")
+```
+
+
+
+## 3. (5 points each)
+
+The data in "pew_sampled_data.RData" come from the PEW RESEARCH CENTER
+2017 STEM SURVEY downloaded from https://urldefense.com/v3/__https://www.pewsocialtrends.org/dataset/2017-pew-research-center-stem-survey/__;!!NCZxaNi9jForCP_SxBKJCA!H2o4AVX3C2X-TmYBjS04rM_qVhCWeHQ0mcn9vyoT7AvlzUgSuJFJ379LaZupcRJ_5w$ 
+8/5/2019.
+
+The data here are sampled from the full survey data according to the survey weights.
+
+```{r}
+load("pew_sampled_data-2.RData")
+```
+
+### 3a.
+
+The variable recording whether the respondent was a STEM worker or a non-STEM worker is "WORKTYPE_FINAL".
+
+The variable "SCH7" records the respondents' selection based on the following question and options:
+
+What's the main reason many young people don't pursue college degrees in science, technology, engineering and mathematics? Is it mostly because. 
+
+1	They think these subjects are too hard
+
+2	They think these subjects are too boring
+
+3	They think these subjects are not useful for their careers
+
+4	Some other reason (please specify) 
+
+5 Refused
+
+Please create a 2-way table that gives the proportion of respondents among Stem workers that selected each response and the proportion of respondents among non-Stem workers that selected each response. 
+
+For the purposes of table display, please shorten the responses to "too hard", "too boring", "not useful", "other".
+
+```{r}
+# Calculate the count of each grouping of worktype and response
+counts = samp %>% 
+            group_by(WORKTYPE_FINAL, SCH7) %>% 
+            summarize(n = n())
+
+# Format the counts into a 2-way table
+prop.table = matrix(c(counts$n[1:3], sum(counts$n[4:5]), counts$n[6:8], sum(counts$n[9:10])), ncol=2)
+two_way = data.frame(t(prop.table))
+names(two_way) = names=c("too hard", "too boring", "not useful", "other")
+row.names(two_way) = c("stem", "nonstem")
+two_way
+
+round(two_way/rowSums(two_way), 4)
+```
+ 
+  
+## 3b.
+
+Please do a $\chi^2$  test and a Fisher's Exact Test to determine if the responses to "SCH7" are independent of "WORKTYPE_FINAL", and compare the results. 
+  
+```{r}
+# Chi-squared test on two_way data
+chisq.test(two_way)
+# Fisher test on two_way data
+fisher.test(two_way)
+```
+Both tests have very small p-values, each $\sim 0.02$ meaning that we should reject the null hypothesis and assert that there is some statistically significant difference between the STEM and NON-STEM groups.
+
+
+## 3c.
+
+Please repeat 2b. omitting respondents who answered "refused".
+
+```{r}
+chisq.test(samp$WORKTYPE_FINAL[samp$SCH7 != "Refused"], 
+            samp$SCH7[samp$SCH7 != "Refused"])
+
+fisher.test(samp$WORKTYPE_FINAL[samp$SCH7 != "Refused"], 
+            samp$SCH7[samp$SCH7 != "Refused"])
+```
+When we remove the "Refused" answers, we get even smaller p-values than when we left them in, which leads us to the same conclusion as in part b. We should reject the null hypothesis and assert that there is some statistically significant difference between the STEM and NON-STEM groups.
+
+### Harassment
+
+The variable "HARASS3" records the respondents' selection based on the following question and options:
+
+Have you ever personally experienced sexual harassment at work, or have you not experienced this?
+
+1	Yes, I have experienced sexual harassment at work
+
+2	No, I have not experienced sexual harassment at work
+
+3 Refused
+
+(Note that the responses are self-reported. Respondents may differ in their perception of harassment and their willingness to report harassment.)
+
+The genders of the respondents are recorded as "Male" or "Female" in the variable "PPGENDER"
+
+(Note that limitation to binary gender reports makes these data ineffective for study of the association of non-binary gender identification with the remaining variables. )
+
+One categorization of the ethnicities of the respondents is recorded in the variable "PPETHM"
+
+### 3d.
+
+Please create a subset of the data that omits responses from the small categories "HARASS3"=="Refused". The function "droplevels" applied to a factor variable will omit levels that aren't represented in the data.
+
+Please run and report the result of an appropriate test of the null hypothesis that the response to "HARASS3" is independent from the response to "PPGENDER" on this subset. Please give a statistical interpretation of the results.
+
+```{r}
+# Remove any data tuples where HARASS = "Refused"
+samp.harass = samp[samp$HARASS3 != "Refused", ]
+
+# To determine independence, we can use a chi-squared test
+chisq.test(samp.harass$HARASS3, samp.harass$PPGENDER)
+
+# Let's also check with the fisher test
+fisher.test(samp.harass$HARASS3, samp.harass$PPGENDER)
+```
+Both of our tests resulted in a very small p-value, therefore we should reject the null hypothesis, and should assert that the HARASS3 and PPGENDER variables are not independent.
+
+### 3e.
+
+Please restrict the data from 3a the respondents who report "Female" in the "PPGENDER" variable. Please provide a table of the proportion of each category of "PPETHM" that responds "Yes, I have experienced sexual harassment at work". Please run and report the result of an appropriate test of the null hypothesis that the response to "HARASS3" is independent from the response to "PPETHM" on this subset. Please give a statistical interpretation of the results. 
+
+```{r}
+# Restrict the data to just females
+samp.female = samp.harass[samp.harass$PPGENDER == "Female", ]
+
+# Construct a 2-way test for the proportions
+counts.female = samp.female %>%
+                 group_by(PPETHM, HARASS3) %>%
+                 summarize(n = n())
+
+two.way.female = data.frame(matrix(head(counts.female$n, -1), ncol=2, byrow=TRUE),
+               row.names=c("White", "Black", "Other", "Hispanic"))
+names(two.way.female) = c("Yes", "No")
+# Print out the values and proportions
+two.way.female
+round(two.way.female / rowSums(two.way.female), 4)
+
+# Conduct some tests to see if HARASS3 and PPETHM are independent
+chisq.test(two.way.female)
+fisher.test(two.way.female)
+
+```
+
+Both tests result in a very small p-value, therefor we should reject the null and assert that the HARASS3 and PPETHM variables are not independent.
